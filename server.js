@@ -4,14 +4,55 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Swagger seadistus
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Keskpanga API',
+      version: '1.0.0',
+      description: 'Keskpanga API, mis võimaldab õpilastel oma panga rakenduste kaudu üksteisele ülekandeid teha',
+      contact: {
+        name: 'API tugi',
+        email: 'support@example.com'
+      },
+      license: {
+        name: 'MIT',
+        url: 'https://opensource.org/licenses/MIT'
+      }
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+        description: 'Arendusserver'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        ApiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key'
+        }
+      }
+    }
+  },
+  apis: ['./server.js']
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Andmebaasi failid
 const BANKS_FILE = path.join(__dirname, 'data', 'banks.json');
@@ -50,9 +91,161 @@ function writeTransactions(data) {
   fs.writeFileSync(TRANSACTIONS_FILE, JSON.stringify(data, null, 2));
 }
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Pangad
+ *     description: Pankade halduse API
+ *   - name: Ülekanded
+ *     description: Ülekannete halduse API
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Bank:
+ *       type: object
+ *       required:
+ *         - name
+ *         - apiUrl
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: Panga unikaalne ID
+ *         name:
+ *           type: string
+ *           description: Panga nimi
+ *         apiUrl:
+ *           type: string
+ *           description: Panga API URL
+ *         balance:
+ *           type: number
+ *           description: Panga bilanss
+ *     BankRegistrationRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - apiUrl
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: Panga nimi
+ *         apiUrl:
+ *           type: string
+ *           description: Panga API URL
+ *     BankRegistrationResponse:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: Panga unikaalne ID
+ *         name:
+ *           type: string
+ *           description: Panga nimi
+ *         apiKey:
+ *           type: string
+ *           description: Panga API võti autentimiseks
+ *         balance:
+ *           type: number
+ *           description: Panga algne bilanss
+ *     Transaction:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: Ülekande unikaalne ID
+ *         fromBankId:
+ *           type: string
+ *           description: Lähtepanga ID
+ *         fromBankName:
+ *           type: string
+ *           description: Lähtepanga nimi
+ *         toBankId:
+ *           type: string
+ *           description: Sihtpanga ID
+ *         toBankName:
+ *           type: string
+ *           description: Sihtpanga nimi
+ *         amount:
+ *           type: number
+ *           description: Ülekande summa
+ *         description:
+ *           type: string
+ *           description: Ülekande kirjeldus
+ *         timestamp:
+ *           type: string
+ *           format: date-time
+ *           description: Ülekande aeg
+ *     TransactionRequest:
+ *       type: object
+ *       required:
+ *         - fromBankId
+ *         - toBankId
+ *         - amount
+ *       properties:
+ *         fromBankId:
+ *           type: string
+ *           description: Lähtepanga ID
+ *         toBankId:
+ *           type: string
+ *           description: Sihtpanga ID
+ *         amount:
+ *           type: number
+ *           description: Ülekande summa
+ *         description:
+ *           type: string
+ *           description: Ülekande kirjeldus
+ *     TransactionResponse:
+ *       type: object
+ *       properties:
+ *         transaction:
+ *           $ref: '#/components/schemas/Transaction'
+ *         fromBankBalance:
+ *           type: number
+ *           description: Lähtepanga uus bilanss pärast ülekannet
+ *     Error:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Veateade
+ */
+
 // Pankade API endpoint-id
 
-// Registreeri uus pank
+/**
+ * @swagger
+ * /api/banks/register:
+ *   post:
+ *     summary: Registreeri uus pank
+ *     tags: [Pangad]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BankRegistrationRequest'
+ *     responses:
+ *       201:
+ *         description: Pank edukalt registreeritud
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BankRegistrationResponse'
+ *       400:
+ *         description: Vale päringu andmed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Serveri viga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/banks/register', (req, res) => {
   try {
     const { name, apiUrl } = req.body;
@@ -97,7 +290,28 @@ app.post('/api/banks/register', (req, res) => {
   }
 });
 
-// Vaata kõiki registreeritud panku
+/**
+ * @swagger
+ * /api/banks:
+ *   get:
+ *     summary: Vaata kõiki registreeritud panku
+ *     tags: [Pangad]
+ *     responses:
+ *       200:
+ *         description: Kõik pangad
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Bank'
+ *       500:
+ *         description: Serveri viga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/banks', (req, res) => {
   try {
     const banks = readBanks();
@@ -114,7 +328,53 @@ app.get('/api/banks', (req, res) => {
   }
 });
 
-// Vaata ühe panga infot (API võtmega autentimine)
+/**
+ * @swagger
+ * /api/banks/{id}:
+ *   get:
+ *     summary: Vaata ühe panga infot
+ *     tags: [Pangad]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Panga ID
+ *     responses:
+ *       200:
+ *         description: Panga info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bank'
+ *       401:
+ *         description: API võti puudub
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Vale API võti
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Panka ei leitud
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Serveri viga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/banks/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -149,7 +409,58 @@ app.get('/api/banks/:id', (req, res) => {
 
 // Ülekannete API endpoint-id
 
-// Tee ülekanne ühelt pangalt teisele
+/**
+ * @swagger
+ * /api/transactions:
+ *   post:
+ *     summary: Tee ülekanne ühelt pangalt teisele
+ *     tags: [Ülekanded]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TransactionRequest'
+ *     responses:
+ *       201:
+ *         description: Ülekanne edukalt tehtud
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TransactionResponse'
+ *       400:
+ *         description: Vale päringu andmed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: API võti puudub
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Vale API võti
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Panka ei leitud
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Serveri viga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/transactions', (req, res) => {
   try {
     const { fromBankId, toBankId, amount, description } = req.body;
@@ -225,7 +536,28 @@ app.post('/api/transactions', (req, res) => {
   }
 });
 
-// Vaata kõiki ülekandeid
+/**
+ * @swagger
+ * /api/transactions:
+ *   get:
+ *     summary: Vaata kõiki ülekandeid
+ *     tags: [Ülekanded]
+ *     responses:
+ *       200:
+ *         description: Kõik ülekanded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Transaction'
+ *       500:
+ *         description: Serveri viga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/transactions', (req, res) => {
   try {
     const transactions = readTransactions();
@@ -236,7 +568,55 @@ app.get('/api/transactions', (req, res) => {
   }
 });
 
-// Vaata ühe panga ülekandeid
+/**
+ * @swagger
+ * /api/transactions/bank/{bankId}:
+ *   get:
+ *     summary: Vaata ühe panga ülekandeid
+ *     tags: [Ülekanded]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bankId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Panga ID
+ *     responses:
+ *       200:
+ *         description: Panga ülekanded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Transaction'
+ *       401:
+ *         description: API võti puudub
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Vale API võti
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Panka ei leitud
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Serveri viga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/transactions/bank/:bankId', (req, res) => {
   try {
     const { bankId } = req.params;
@@ -270,7 +650,13 @@ app.get('/api/transactions/bank/:bankId', (req, res) => {
   }
 });
 
+// Lisa info Swagger UI kohta peamisele veebilehele
+app.get('/', (req, res) => {
+  res.redirect('/index.html');
+});
+
 // Serveri käivitamine
 app.listen(PORT, () => {
   console.log(`Server töötab pordil ${PORT}`);
+  console.log(`Swagger dokumentatsioon on saadaval: http://localhost:${PORT}/api-docs`);
 });
