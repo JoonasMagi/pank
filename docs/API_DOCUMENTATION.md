@@ -18,6 +18,20 @@ Keskpanga API on saadaval järgmisel aadressil (eeldusel, et server töötab koh
 http://localhost:3000/api
 ```
 
+## Swagger UI
+
+API testimiseks ja uurimiseks on saadaval interaktiivne Swagger UI liides:
+
+```
+http://localhost:3000/api-docs
+```
+
+Swagger UI võimaldab:
+- Näha kõiki API otspunkte (endpoints)
+- Testida päringuid otse veebiliideses
+- Vaadata API päringute ja vastuste mudeleid
+- Lugeda dokumentatsiooni iga API otspunkti kohta
+
 ## Autentimine
 
 Enamus API päringuid nõuavad autentimist, mis toimub `X-API-Key` päise abil. API võti antakse pangale registreerimise ajal.
@@ -26,6 +40,8 @@ Näide:
 ```
 X-API-Key: sinu-api-voti
 ```
+
+Swagger UI keskkond võimaldab API võtme lisada päringu autoriseerimisel, vajutades "Authorize" nupule.
 
 ## API Endpoints
 
@@ -254,3 +270,4 @@ async function teeYlekanne() {
 1. **Turvalisus** - Hoidke oma API võtit turvalises kohas ja ärge jätke seda avalikku koodi.
 2. **Veahaldus** - Käsitlege kõiki võimalikke vigu korrektselt ja näidake kasutajale selgeid veateateid.
 3. **Automaatne värskendamine** - Kaaluge konto jäägi ja tehingute ajaloo automaatset värskendamist regulaarsete intervallidega.
+4. **API testimine** - Kasutage Swagger UI-d API päringute testimiseks ja erinevate parameetrite mõju uurimiseks.
