@@ -36,7 +36,33 @@ Server käivitub pordil 3000. Saate keskpanga veebiliidest avada brauseris aadre
 http://localhost:3000
 ```
 
-## 2. Panga registreerimine
+API dokumentatsiooni (Swagger UI) leiate aadressilt:
+
+```
+http://localhost:3000/api-docs
+```
+
+## 2. API uurimine Swagger UI abil
+
+Enne integreerimise alustamist on kasulik tutvuda API võimalustega Swagger UI kaudu.
+
+1. Avage Swagger UI brauseris: http://localhost:3000/api-docs
+2. Swagger UI näitab kõiki saadaolevaid API otspunkte (endpoints) gruppidena
+3. Iga otspunkti juures saate näha:
+   - Päringu andmete mudelit
+   - Vajalikke parameetreid
+   - Autentimisnõudeid
+   - Võimalikke vastuseid ja nende mudeleid
+4. Päringute testimiseks:
+   - Kui päring nõuab autentimist, klõpsake ülaosas "Authorize" nupul ja sisestage oma API võti
+   - Avage testitav otspunkt, klõpsates sellel
+   - Täitke vajalikud parameetrid
+   - Vajutage "Execute" nuppu
+   - Näete tegelikku HTTP päringut ja vastust
+
+See annab hea ülevaate API võimalustest enne, kui hakkate looma oma klientrakendust.
+
+## 3. Panga registreerimine
 
 Enne oma klientpanga rakenduse loomist peate registreerima panga keskpangas.
 
@@ -47,7 +73,22 @@ Enne oma klientpanga rakenduse loomist peate registreerima panga keskpangas.
 3. Klõpsake nupul "Registreeri"
 4. Peale registreerimist kuvatakse teile API võti - **salvestage see kindlasse kohta!**
 
-### Alternatiivselt: registreerige pank API kaudu
+### Alternatiivselt: registreerige pank Swagger UI kaudu
+
+1. Avage Swagger UI brauseris (http://localhost:3000/api-docs)
+2. Leidke sektsioonis "Pangad" endpoint `/api/banks/register`
+3. Klikkige sellel ja vajutage "Try it out"
+4. Sisestage JSON kehas oma panga andmed:
+   ```json
+   {
+     "name": "Minu Pank",
+     "apiUrl": "http://localhost:8080"
+   }
+   ```
+5. Vajutage "Execute"
+6. Salvestage vastusest saadud `id` ja `apiKey` väärtused
+
+### Alternatiivselt: registreerige pank API kaudu (CURL)
 
 ```bash
 curl -X POST http://localhost:3000/api/banks/register \
@@ -57,7 +98,7 @@ curl -X POST http://localhost:3000/api/banks/register \
 
 Salvestage tagastatud `id` ja `apiKey` väärtused.
 
-## 3. Klientpanga rakenduse loomine
+## 4. Klientpanga rakenduse loomine
 
 Nüüd saate luua oma panga rakenduse, mis suhtleb keskpangaga.
 
@@ -97,7 +138,7 @@ python -m http.server
 
 Nüüd saate avada klientrakenduse brauseris, tavaliselt aadressil `http://localhost:8080`.
 
-## 4. Oma klientpanga rakenduse loomine
+## 5. Oma klientpanga rakenduse loomine
 
 Kui soovite luua täiesti oma panga rakenduse, võite kasutada pakutud `panga-klient.js` teeki, mis lihtsustab keskpanga API-ga suhtlemist.
 
@@ -146,7 +187,7 @@ async function saadaRaha(sihtpangaId, summa, kirjeldus = 'Ülekanne') {
 }
 ```
 
-## 5. Kohandage oma rakendust
+## 6. Kohandage oma rakendust
 
 Nüüd saate luua täielikult kohandatud panga rakenduse kasutades `PangaKlient` klassi API-ga suhtlemiseks. Siin on mõned ideed:
 
@@ -156,7 +197,7 @@ Nüüd saate luua täielikult kohandatud panga rakenduse kasutades `PangaKlient`
 4. **Sularahaautomaat**: Simuleerige sularaha väljavõtmise ja sissemakse funktsioone.
 5. **Krediitkaardid**: Lisage krediitkaardi simulatsioon koos krediidilimiidi ja intressiarvestusega.
 
-## 6. Testimine
+## 7. Testimine
 
 Testimiseks saate registreerida mitu panka keskpangas ja teha nende vahel ülekandeid.
 
@@ -166,14 +207,25 @@ Testimiseks saate registreerida mitu panka keskpangas ja teha nende vahel üleka
 2. Registreerige mitu panka erinevate nimedega
 3. Salvestage iga panga API võti ja ID
 
-### Testige ülekandeid
+Või kasutage Swagger UI-d mitme panga registreerimiseks ja testimiseks.
+
+### Testige API-t Swagger UI-ga
+
+1. Avage Swagger UI (http://localhost:3000/api-docs)
+2. Autoriseerige end, sisestades API võtme
+3. Proovige erinevaid päringuid:
+   - Vaadake panga infot
+   - Tehke ülekandeid
+   - Vaadake tehingute ajalugu
+
+### Testige ülekandeid klientrakendusega
 
 1. Seadistage iga panga klientrakendus eraldi brauseri vahekaardil
 2. Tehke ülekandeid pankade vahel
-3. Kontrollige, et bilanss muutuks korrektsel
+3. Kontrollige, et bilanss muutuks korrektselt
 4. Veenduge, et tehingute ajalugu näitaks kõiki ülekandeid
 
-## 7. Veaotsing
+## 8. Veaotsing
 
 ### Server ei käivitu
 
@@ -187,9 +239,29 @@ Testimiseks saate registreerida mitu panka keskpangas ja teha nende vahel üleka
 - Kontrollige, et keskpanga server töötaks
 - Vaadake brauseri konsooli võimalike veateadete jaoks
 - Kontrollige, et CORS seaded ei blokeeri päringuid (kui jooksutate erinevatel portidel)
+- Kasutage Swagger UI-d päringute testimiseks, et teha kindlaks, kas probleem on API-s või klientrakenduses
 
 ### Ülekanne ebaõnnestub
 
 - Kontrollige, et kontol oleks piisavalt raha
 - Veenduge, et kasutate õiget API võtit
 - Kontrollige, et sihtpanga ID oleks õige
+- Testige ülekannet Swagger UI kaudu, et näha täpsemat veateadet
+
+## 9. Täiendavad ressursid
+
+- Keskpanga API dokumentatsioon: [docs/API_DOCUMENTATION.md](../API_DOCUMENTATION.md)
+- Swagger UI: http://localhost:3000/api-docs (kui server on käivitatud)
+- Näidisrakenduse lähtekood: [client-example/](../client-example/)
+
+## 10. Kokkuvõte
+
+Selles õpetuses nägite, kuidas:
+
+1. Paigaldada ja käivitada keskpanga rakendus
+2. Uurida API-t Swagger UI abil
+3. Registreerida pank keskpangas
+4. Luua klientpanga rakendus, mis suhtleb keskpangaga
+5. Testida ja kohandada oma rakendust
+
+Nüüd on teil kõik vajalikud teadmised ja tööriistad oma pangandussimulatsiooni arendamiseks!
